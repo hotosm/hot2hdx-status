@@ -239,7 +239,7 @@
       font-family: var(--font-alt);
     }
 
-    main { padding: 0 24px; }
+    main { padding: 20px 24px 0; }
     .country-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -468,14 +468,16 @@
     footer a { color: var(--hot-red); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
     @media (max-width: 900px) {
-      .h-stats { display: none; }
+      .h-inner  { flex-wrap: wrap; row-gap: 0; }
+      .h-left   { flex: 1; }
+      .h-stats  { width: 100%; justify-content: flex-start; padding-top: 8px; border-top: 1px solid var(--gray-100); margin-top: 2px; }
     }
 
     @media (max-width: 640px) {
-      header   { padding: 10px 14px; }
-      .h-inner { flex-wrap: wrap; gap: 10px; }
-      .h-left  { flex: 1; }
+      header    { padding: 10px 14px; }
+      .h-inner  { gap: 10px; }
       .h-center { order: 3; width: 100%; justify-content: flex-start; }
+      .h-stats  { order: 4; }
       .search-box { max-width: none; }
       #controls   { padding: 8px 14px; }
       main        { padding: 14px 14px 0; }
