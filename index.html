@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOT Dataset Status Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;700&family=Barlow:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* HOT UI design tokens */
+    :root {
+      --hot-red:       #d43f3f;
+      --hot-red-dark:  #b83032;
+      --hot-red-muted: #feecef;
+
+      --gray-950: #2c3038;
+      --gray-900: #404248;
+      --gray-700: #615f66;
+      --gray-500: #828085;
+      --gray-300: #b3b0b3;
+      --gray-200: #c4c3c5;
+      --gray-100: #e1e0e1;
+      --gray-50:  #f3f3f3;
+
+      --s-current:    #16a34a;
+      --s-current-bg: #dcfce7;
+      --s-due:        #f77d0f;
+      --s-due-bg:     #fff0df;
+      --s-late:       #d43f3f;
+      --s-late-bg:    #feecef;
+      --s-na:         #828085;
+      --s-na-bg:      #f3f3f3;
+
+      --font:     'Archivo', -apple-system, Roboto, Helvetica, Arial, sans-serif;
+      --font-alt: 'Barlow', -apple-system, sans-serif;
+
+      --r-sm: 3px;
+      --r:    4px;
+      --r-lg: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--gray-900);
+      background: var(--gray-50);
+      min-height: 100vh;
+    }
+
+    /* ── Loader overlay ──────────────────────────────────────── */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: var(--gray-50);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    #loader.done { opacity: 0; visibility: hidden; }
+
+    .l-logo { display: flex; align-items: center; justify-content: center; }
+
+    .l-title { font-size: 16px; font-weight: 500; color: var(--gray-900); }
+    .l-sub   { font-size: 12px; color: var(--gray-500); font-family: var(--font-alt); }
+
+    .progress-track {
+      width: 260px;
+      height: 4px;
+      background: var(--gray-200);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      background: var(--hot-red);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    /* ── App shell ────────────────────────────────────────────── */
+    #app { display: none; }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    header {
+      background: var(--gray-950);
+      color: white;
+      padding: 0 24px;
+    }
+
+    .h-inner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 0;
+    }
+
+    .h-logo { display: flex; align-items: center; flex-shrink: 0; }
+
+    .h-brand h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    .h-brand p {
+      font-size: 11px;
+      color: var(--gray-500);
+      font-family: var(--font-alt);
+      margin-top: 1px;
+    }
+
+    .h-chips {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px 3px 7px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-family: var(--font-alt);
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
+      white-space: nowrap;
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .chip.total   { color: #cbd5e1; }
+    .chip.current { color: #86efac; }   .chip.current .chip-dot  { background: #4ade80; }
+    .chip.due     { color: #fde68a; }   .chip.due .chip-dot      { background: #fbbf24; }
+    .chip.late    { color: #fca5a5; }   .chip.late .chip-dot     { background: #f87171; }
+
+    /* ── Controls ─────────────────────────────────────────────── */
+    #controls {
+      background: white;
+      border-bottom: 1px solid var(--gray-100);
+      padding: 9px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 180px;
+      flex: 1;
+      max-width: 340px;
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-500);
+      pointer-events: none;
+    }
+
+    .search-box input {
+      width: 100%;
+    }
+
+    input[type="text"], select {
+      font-family: var(--font);
+      font-size: 13px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--r);
+      padding: 7px 10px;
+      color: var(--gray-900);
+      background: white;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus, select:focus { border-color: var(--hot-red); }
+    select { cursor: pointer; }
+
+    /* higher specificity wins over input[type="text"] */
+    .search-box input[type="text"] { padding-left: 32px; }
+
+    .cache-row {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--gray-500);
+      font-family: var(--font-alt);
+    }
+
+    .refresh-btn {
+      font-family: var(--font);
+      font-size: 11px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--r);
+      padding: 3px 8px;
+      background: white;
+      color: var(--gray-700);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .refresh-btn:hover { border-color: var(--hot-red); color: var(--hot-red); }
+
+    /* ── Main ─────────────────────────────────────────────────── */
+    main { padding: 18px 24px 0; }
+
+    /* ── Country grid ─────────────────────────────────────────── */
+    .country-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .ccard {
+      background: white;
+      border: 1px solid var(--gray-100);
+      border-radius: var(--r-lg);
+      padding: 15px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .ccard:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-color: var(--gray-300); }
+
+    .ccard.selected {
+      border-color: var(--hot-red);
+      box-shadow: 0 0 0 2px var(--hot-red-muted);
+    }
+
+    .ccard-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .ccard-name { font-size: 13px; font-weight: 600; color: var(--gray-900); line-height: 1.3; }
+    .ccard-iso  { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-alt); margin-top: 1px; }
+
+    .ccard-count {
+      font-size: 11px;
+      color: var(--gray-500);
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: 99px;
+      padding: 2px 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-family: var(--font-alt);
+    }
+
+    .sbar {
+      display: flex;
+      height: 4px;
+      border-radius: 99px;
+      overflow: hidden;
+      background: var(--gray-100);
+      margin-bottom: 10px;
+      gap: 1px;
+    }
+
+    .sbar-s { border-radius: 99px; height: 100%; }
+    .sbar-s.outdated { background: var(--s-late); }
+    .sbar-s.due-soon { background: var(--s-due); }
+    .sbar-s.current  { background: var(--s-current); }
+
+    .pill-row { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--font-alt);
+    }
+
+    .pill.current  { background: var(--s-current-bg); color: var(--s-current); }
+    .pill.outdated { background: var(--s-late-bg);    color: var(--s-late); }
+    .pill.due-soon { background: var(--s-due-bg);     color: var(--s-due); }
+    .pill.na, .pill.unknown { background: var(--s-na-bg); color: var(--s-na); }
+
+    .pdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+    /* ── Country detail panel ─────────────────────────────────── */
+    #panel-wrap {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 16px;
+    }
+
+    #panel-wrap.open { grid-template-rows: 1fr; }
+
+    #panel-inner { overflow: hidden; }
+
+    .panel-shell {
+      background: white;
+      border: 1px solid var(--gray-100);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-100);
+      background: var(--gray-50);
+    }
+
+    .panel-head-left { display: flex; align-items: center; gap: 10px; }
+
+    .panel-cname {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .iso-badge {
+      font-size: 10px;
+      font-family: var(--font-alt);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: white;
+      background: var(--hot-red);
+      padding: 1px 7px;
+      border-radius: var(--r-sm);
+    }
+
+    .panel-ds-count {
+      font-size: 12px;
+      color: var(--gray-500);
+      font-family: var(--font-alt);
+    }
+
+    .panel-close-btn {
+      width: 27px;
+      height: 27px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--r);
+      background: white;
+      color: var(--gray-700);
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .panel-close-btn:hover { border-color: var(--hot-red); color: var(--hot-red); }
+
+    /* Dataset rows table */
+    .ds-table-wrap { overflow-x: auto; }
+
+    .ds-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .ds-table thead th {
+      padding: 8px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      border-bottom: 1px solid var(--gray-100);
+      white-space: nowrap;
+      font-family: var(--font-alt);
+    }
+
+    .ds-table tbody tr {
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .ds-table tbody tr:hover { background: #fff6f6; }
+    .ds-table tbody tr:hover .ds-type { color: var(--hot-red); }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+
+    .ds-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: middle;
+    }
+
+    .ds-type { font-weight: 500; color: var(--gray-900); transition: color 0.1s; }
+    .ds-mono { font-variant-numeric: tabular-nums; font-family: var(--font-alt); font-size: 12px; color: var(--gray-700); white-space: nowrap; }
+    .ds-due-ok   { color: var(--gray-700); }
+    .ds-due-warn { color: var(--s-due);    font-weight: 500; }
+    .ds-due-late { color: var(--s-late);   font-weight: 500; }
+    .ds-hdx-lnk  { font-size: 11px; font-weight: 600; color: var(--hot-red); font-family: var(--font-alt); white-space: nowrap; }
+
+    /* Status badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--font-alt);
+      white-space: nowrap;
+    }
+
+    .badge.current  { background: var(--s-current-bg); color: var(--s-current); }
+    .badge.outdated { background: var(--s-late-bg);    color: var(--s-late); }
+    .badge.due-soon { background: var(--s-due-bg);     color: var(--s-due); }
+    .badge.na, .badge.unknown { background: var(--s-na-bg); color: var(--s-na); }
+
+    /* ── Empty state ──────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--gray-500);
+      font-family: var(--font-alt);
+      font-size: 13px;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    footer {
+      padding: 14px 24px;
+      font-size: 11px;
+      color: var(--gray-500);
+      font-family: var(--font-alt);
+      border-top: 1px solid var(--gray-100);
+      background: white;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    footer a { color: var(--hot-red); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      header      { padding: 0 14px; }
+      .h-chips    { display: none; }
+      #controls   { padding: 8px 14px; }
+      main        { padding: 14px 14px 0; }
+      .country-grid { grid-template-columns: 1fr; }
+      footer      { padding: 12px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loader">
+  <div class="l-logo">
+    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="60" viewBox="0 0 80 48" aria-label="HOT logo">
+      <g fill="#D73F3F" fill-rule="evenodd">
+        <path d="M37.02656,20.77496 C37.02656,20.29096 37.12976,19.85896 37.33616,19.48616 C37.54096,19.11176 37.81296,18.80696 38.15056,18.56376 C38.48656,18.32136 38.86496,18.13736 39.28576,18.01336 C39.70496,17.89016 40.12736,17.82776 40.55376,17.82776 C40.97856,17.82776 41.40256,17.89016 41.82336,18.01336 C42.24176,18.13736 42.62016,18.32136 42.95616,18.56376 C43.29456,18.80696 43.56576,19.11176 43.77216,19.48616 C43.97856,19.85896 44.08096,20.29096 44.08096,20.77496 L44.08096,27.14696 C44.08096,27.64136 43.97856,28.07496 43.77216,28.44216 C43.56576,28.81096 43.29456,29.11416 42.95616,29.35736 C42.62016,29.60136 42.24176,29.78616 41.82336,29.90856 C41.40256,30.03176 40.97856,30.09336 40.55376,30.09336 C40.12736,30.09336 39.70496,30.03176 39.28576,29.90856 C38.86496,29.78616 38.48656,29.60136 38.15056,29.35736 C37.81296,29.11416 37.54096,28.81096 37.33616,28.44216 C37.12976,28.07496 37.02656,27.64136 37.02656,27.14696 L37.02656,20.77496 Z M39.05136,27.15016 C39.05136,27.56536 39.28256,27.87496 39.56576,28.07176 C39.84736,28.27016 40.18096,28.37496 40.56576,28.37496 C40.94896,28.37496 41.28416,28.27016 41.56656,28.07176 C41.84736,27.87496 42.00816,27.56536 42.00816,27.15016 L42.00816,20.77816 C42.00816,20.36136 41.84736,20.05256 41.56656,19.85576 C41.28416,19.65816 40.94896,19.52536 40.56576,19.52536 C40.18096,19.52536 39.84736,19.65816 39.56576,19.85576 C39.28256,20.05256 39.05136,20.36136 39.05136,20.77816 L39.05136,27.15016 Z"/>
+        <polygon points="33.379 17.815 33.379 22.99 30.152 22.99 30.152 17.815 28.387 17.815 28.387 30.1 30.152 30.1 30.152 24.923 33.379 24.923 33.379 30.1 35.278 30.1 35.278 17.815"/>
+        <polygon points="52.431 17.815 45.426 17.815 45.426 19.622 48.015 19.622 47.985 30.1 49.847 30.1 49.847 19.622 52.431 19.622"/>
+        <path d="M65.42344,28.7668 L79.67944,28.7668 L71.15544,19.1684 L62.66904,9.57 L54.18104,0.000400000001 L11.53944,0.000400000001 L20.02584,9.57 L5.73784,9.57 L14.22584,19.1684 L14.29144,19.2332 L0.000239999999,19.2332 L8.52184,28.8316 L17.01304,38.43 L25.50024,48.0004 L68.14184,48.0004 L59.65064,38.43 L59.58824,38.3364 L73.87864,38.3364 L65.42344,28.7668 Z M39.83944,39.9492 C30.31864,39.9492 22.60104,32.8084 22.60104,24.0012 C22.60104,15.1908 30.31864,8.05 39.83944,8.05 C49.36104,8.05 57.07944,15.1908 57.07944,24.0012 C57.07944,32.8084 49.36104,39.9492 39.83944,39.9492 Z"/>
+      </g>
+    </svg>
+  </div>
+  <div class="l-title">Loading HOT datasets from HDX...</div>
+  <div class="progress-track"><div id="progress-fill"></div></div>
+  <div class="l-sub" id="loader-sub">Connecting...</div>
+</div>
+
+<!-- App (hidden until data is ready) -->
+<div id="app">
+  <header>
+    <div class="h-inner">
+      <div class="h-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="54" height="32" viewBox="0 0 80 48" aria-label="HOT logo">
+          <g fill="#D73F3F" fill-rule="evenodd">
+            <path d="M37.02656,20.77496 C37.02656,20.29096 37.12976,19.85896 37.33616,19.48616 C37.54096,19.11176 37.81296,18.80696 38.15056,18.56376 C38.48656,18.32136 38.86496,18.13736 39.28576,18.01336 C39.70496,17.89016 40.12736,17.82776 40.55376,17.82776 C40.97856,17.82776 41.40256,17.89016 41.82336,18.01336 C42.24176,18.13736 42.62016,18.32136 42.95616,18.56376 C43.29456,18.80696 43.56576,19.11176 43.77216,19.48616 C43.97856,19.85896 44.08096,20.29096 44.08096,20.77496 L44.08096,27.14696 C44.08096,27.64136 43.97856,28.07496 43.77216,28.44216 C43.56576,28.81096 43.29456,29.11416 42.95616,29.35736 C42.62016,29.60136 42.24176,29.78616 41.82336,29.90856 C41.40256,30.03176 40.97856,30.09336 40.55376,30.09336 C40.12736,30.09336 39.70496,30.03176 39.28576,29.90856 C38.86496,29.78616 38.48656,29.60136 38.15056,29.35736 C37.81296,29.11416 37.54096,28.81096 37.33616,28.44216 C37.12976,28.07496 37.02656,27.64136 37.02656,27.14696 L37.02656,20.77496 Z M39.05136,27.15016 C39.05136,27.56536 39.28256,27.87496 39.56576,28.07176 C39.84736,28.27016 40.18096,28.37496 40.56576,28.37496 C40.94896,28.37496 41.28416,28.27016 41.56656,28.07176 C41.84736,27.87496 42.00816,27.56536 42.00816,27.15016 L42.00816,20.77816 C42.00816,20.36136 41.84736,20.05256 41.56656,19.85576 C41.28416,19.65816 40.94896,19.52536 40.56576,19.52536 C40.18096,19.52536 39.84736,19.65816 39.56576,19.85576 C39.28256,20.05256 39.05136,20.36136 39.05136,20.77816 L39.05136,27.15016 Z"/>
+            <polygon points="33.379 17.815 33.379 22.99 30.152 22.99 30.152 17.815 28.387 17.815 28.387 30.1 30.152 30.1 30.152 24.923 33.379 24.923 33.379 30.1 35.278 30.1 35.278 17.815"/>
+            <polygon points="52.431 17.815 45.426 17.815 45.426 19.622 48.015 19.622 47.985 30.1 49.847 30.1 49.847 19.622 52.431 19.622"/>
+            <path d="M65.42344,28.7668 L79.67944,28.7668 L71.15544,19.1684 L62.66904,9.57 L54.18104,0.000400000001 L11.53944,0.000400000001 L20.02584,9.57 L5.73784,9.57 L14.22584,19.1684 L14.29144,19.2332 L0.000239999999,19.2332 L8.52184,28.8316 L17.01304,38.43 L25.50024,48.0004 L68.14184,48.0004 L59.65064,38.43 L59.58824,38.3364 L73.87864,38.3364 L65.42344,28.7668 Z M39.83944,39.9492 C30.31864,39.9492 22.60104,32.8084 22.60104,24.0012 C22.60104,15.1908 30.31864,8.05 39.83944,8.05 C49.36104,8.05 57.07944,15.1908 57.07944,24.0012 C57.07944,32.8084 49.36104,39.9492 39.83944,39.9492 Z"/>
+          </g>
+        </svg>
+      </div>
+      <div class="h-brand">
+        <h1>HOT Dataset Status Dashboard</h1>
+        <p>Humanitarian OpenStreetMap Team - HDX Dataset Monitor</p>
+      </div>
+      <div class="h-chips" id="h-chips"></div>
+    </div>
+  </header>
+
+  <div id="controls">
+    <div class="search-box">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" id="search" placeholder="Search by country or dataset type...">
+    </div>
+    <select id="status-filter">
+      <option value="all">All statuses</option>
+      <option value="outdated">Outdated</option>
+      <option value="due-soon">Due soon</option>
+      <option value="current">Current</option>
+      <option value="na">Not applicable</option>
+      <option value="unknown">Unknown</option>
+    </select>
+    <div class="cache-row" id="cache-row"></div>
+  </div>
+
+  <main>
+    <div class="country-grid" id="country-grid"></div>
+
+    <div id="panel-wrap">
+      <div id="panel-inner">
+        <div class="panel-shell" id="panel-shell">
+          <div class="panel-head">
+            <div class="panel-head-left">
+              <span class="panel-cname" id="panel-cname"></span>
+              <span class="iso-badge"   id="panel-iso"></span>
+              <span class="panel-ds-count" id="panel-ds-count"></span>
+            </div>
+            <button class="panel-close-btn" id="panel-close">&#x2715;</button>
+          </div>
+          <div class="ds-table-wrap">
+            <table class="ds-table">
+              <thead>
+                <tr>
+                  <th>Dataset Type</th>
+                  <th>Last Updated</th>
+                  <th>Frequency</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="panel-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Data from <a href="https://data.humdata.org/organization/hot" target="_blank" rel="noopener">HDX - Humanitarian Data Exchange</a> via CKAN API.
+    Click any dataset row to open it on HDX.
+  </footer>
+</div>
+
+<script>
+  const API       = 'https://data.humdata.org/api/3/action/package_search';
+  const HDX       = 'https://data.humdata.org/dataset/';
+  const PAGE_SIZE = 500;
+  const CACHE_KEY = 'hot_dashboard_v2';
+  const CACHE_TTL = 6 * 60 * 60 * 1000;   // 6 hours
+  const DUE_SOON  = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  const S = Object.freeze({
+    CURRENT:  'current',
+    DUE_SOON: 'due-soon',
+    OUTDATED: 'outdated',
+    NA:       'na',
+    UNKNOWN:  'unknown',
+  });
+
+  // ── State ──────────────────────────────────────────────────────────────────
+
+  const state = {
+    all:      [],          // fully hydrated dataset objects
+    filtered: [],
+    groups:   {},          // { countryName: { country, iso3, datasets[] } }
+    rendered: [],          // ordered groups array after last renderGrid()
+    selected: null,        // selected country name
+    search:   '',
+    status:   'all',
+  };
+
+  // ── Cache ──────────────────────────────────────────────────────────────────
+
+  function cacheRead() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) return null;
+      return { ts, data };
+    } catch { return null; }
+  }
+
+  function cacheWrite(data) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+    } catch { /* quota exceeded or unavailable */ }
+  }
+
+  function cacheClear() {
+    try { localStorage.removeItem(CACHE_KEY); } catch {}
+  }
+
+  // ── Network ────────────────────────────────────────────────────────────────
+
+  async function fetchPage(start) {
+    const url = `${API}?q=organization:hot&rows=${PAGE_SIZE}&start=${start}&sort=metadata_modified+desc`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (!json.success) throw new Error('API returned success=false');
+    return json.result;
+  }
+
+  async function fetchAll() {
+    const first = await fetchPage(0);
+    const total = first.count;
+    const pages = Math.ceil(total / PAGE_SIZE);
+
+    let raw = first.results;
+    setProgress(raw.length, total, 1, pages);
+
+    for (let p = 1; p < pages; p++) {
+      raw = raw.concat((await fetchPage(p * PAGE_SIZE)).results);
+      setProgress(raw.length, total, p + 1, pages);
+    }
+
+    return raw;
+  }
+
+  // ── Data processing ────────────────────────────────────────────────────────
+
+  function processRaw(raw) {
+    return raw.map(d => {
+      const parts = d.name.split('_');
+      const iso3  = parts[1] || null;
+      const type  = parts.length > 2 ? titleCase(parts.slice(2).join(' ')) : 'Unknown';
+      const grp   = d.groups && d.groups[0];
+      return {
+        id:         d.id,
+        name:       d.name,
+        iso3,
+        country:    grp ? grp.display_name : (iso3 ? iso3.toUpperCase() : 'Unknown'),
+        countryId:  grp ? grp.id : iso3,
+        type,
+        frequency:  d.data_update_frequency != null ? Number(d.data_update_frequency) : null,
+        dueDateStr: d.due_date || null,
+        lastModStr: d.metadata_modified || null,
+      };
+    });
+  }
+
+  function hydrate(d) {
+    const due    = d.dueDateStr ? new Date(d.dueDateStr) : null;
+    const lastMod = d.lastModStr ? new Date(d.lastModStr) : null;
+    return { ...d, due, lastMod, status: computeStatus(d.frequency, due, lastMod) };
+  }
+
+  function computeStatus(freq, due, lastMod) {
+    if (freq === -2 || freq === -1) return S.NA;
+    const now = Date.now();
+    if (due) {
+      const dt = due.getTime();
+      if (dt < now) return S.OUTDATED;
+      if (dt - now <= DUE_SOON) return S.DUE_SOON;
+      return S.CURRENT;
+    }
+    if (lastMod && freq > 0) {
+      const next = lastMod.getTime() + freq * 86400000;
+      if (next < now) return S.OUTDATED;
+      if (next - now <= DUE_SOON) return S.DUE_SOON;
+      return S.CURRENT;
+    }
+    return S.UNKNOWN;
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
+  async function init() {
+    try {
+      let cachedAt = null;
+      const cached = cacheRead();
+
+      if (cached) {
+        cachedAt = cached.ts;
+        state.all = cached.data.map(hydrate);
+      } else {
+        const raw       = await fetchAll();
+        const processed = processRaw(raw);
+        cacheWrite(processed);
+        state.all = processed.map(hydrate);
+      }
+
+      applyFilters();
+      revealApp(cachedAt);
+    } catch (err) {
+      document.getElementById('loader').innerHTML = `
+        <div style="text-align:center;padding:24px;max-width:380px;font-family:'Archivo',sans-serif">
+          <div style="font-size:15px;font-weight:600;color:#d43f3f;margin-bottom:8px">Failed to load datasets</div>
+          <div style="font-size:13px;color:#828085;margin-bottom:16px">${err.message}</div>
+          <button onclick="cacheClear();location.reload()"
+            style="padding:6px 16px;border:1px solid #c4c3c5;border-radius:4px;cursor:pointer;font-size:13px">
+            Retry
+          </button>
+        </div>`;
+    }
+  }
+
+  function revealApp(cachedAt) {
+    document.getElementById('loader').classList.add('done');
+    document.getElementById('app').style.display = 'block';
+    renderCacheRow(cachedAt);
+    bindEvents();
+  }
+
+  function renderCacheRow(cachedAt) {
+    const el = document.getElementById('cache-row');
+    let label = 'Live data';
+    if (cachedAt) {
+      const mins = Math.round((Date.now() - cachedAt) / 60000);
+      label = mins < 1 ? 'Cached just now' : `Cached ${mins}m ago`;
+    }
+    el.innerHTML = `${label}&nbsp;&nbsp;<button class="refresh-btn" id="refresh-btn">Refresh</button>`;
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      cacheClear();
+      location.reload();
+    });
+  }
+
+  // ── Events ─────────────────────────────────────────────────────────────────
+
+  function bindEvents() {
+    document.getElementById('search').addEventListener('input', e => {
+      state.search = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('status-filter').addEventListener('change', e => {
+      state.status = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('country-grid').addEventListener('click', e => {
+      const card = e.target.closest('.ccard');
+      if (!card) return;
+      const group = state.rendered[Number(card.dataset.idx)];
+      if (group) toggleCountry(group.country, card);
+    });
+
+    document.getElementById('panel-close').addEventListener('click', closePanel);
+
+    document.getElementById('panel-tbody').addEventListener('click', e => {
+      const row = e.target.closest('tr[data-url]');
+      if (row) window.open(row.dataset.url, '_blank', 'noopener');
+    });
+  }
+
+  // ── Filters ────────────────────────────────────────────────────────────────
+
+  function applyFilters() {
+    const q = state.search.toLowerCase().trim();
+
+    state.filtered = state.all.filter(d => {
+      if (state.status !== 'all' && d.status !== state.status) return false;
+      if (q && !d.country.toLowerCase().includes(q) && !d.type.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    state.groups = buildGroups(state.filtered);
+    renderChips();
+    renderGrid();
+
+    if (state.selected && state.groups[state.selected]) {
+      renderPanel(state.groups[state.selected]);
+    } else {
+      closePanel();
+    }
+  }
+
+  function buildGroups(datasets) {
+    return datasets.reduce((acc, d) => {
+      if (!acc[d.country]) acc[d.country] = { country: d.country, iso3: d.iso3, datasets: [] };
+      acc[d.country].datasets.push(d);
+      return acc;
+    }, {});
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
+
+  function renderChips() {
+    const ds  = state.filtered;
+    const byS = tally(ds);
+    const nc  = Object.keys(state.groups).length;
+    document.getElementById('h-chips').innerHTML = `
+      <div class="chip total">${ds.length.toLocaleString()} datasets - ${nc} countries</div>
+      <div class="chip current"><div class="chip-dot"></div>${(byS[S.CURRENT]||0).toLocaleString()} current</div>
+      <div class="chip due"><div class="chip-dot"></div>${(byS[S.DUE_SOON]||0).toLocaleString()} due soon</div>
+      <div class="chip late"><div class="chip-dot"></div>${(byS[S.OUTDATED]||0).toLocaleString()} outdated</div>
+    `;
+  }
+
+  function renderGrid() {
+    const sorted = Object.values(state.groups).sort((a, b) => {
+      const aOut = a.datasets.filter(d => d.status === S.OUTDATED).length;
+      const bOut = b.datasets.filter(d => d.status === S.OUTDATED).length;
+      return bOut - aOut || a.country.localeCompare(b.country);
+    });
+
+    state.rendered = sorted;
+    const grid = document.getElementById('country-grid');
+
+    if (!sorted.length) {
+      grid.innerHTML = '<div class="empty">No countries match your filters.</div>';
+      return;
+    }
+
+    grid.innerHTML = sorted.map((g, i) => buildCard(g, i)).join('');
+
+    if (state.selected) {
+      const idx = sorted.findIndex(g => g.country === state.selected);
+      if (idx >= 0) grid.children[idx]?.classList.add('selected');
+    }
+  }
+
+  function buildCard(g, idx) {
+    const { country, iso3, datasets } = g;
+    const byS     = tally(datasets);
+    const total   = datasets.length;
+    const outdated = byS[S.OUTDATED] || 0;
+    const due      = byS[S.DUE_SOON] || 0;
+    const current  = byS[S.CURRENT]  || 0;
+    const rest     = total - outdated - due - current;
+
+    const seg = (n, cls) => n > 0 ? `<div class="sbar-s ${cls}" style="flex:${n}"></div>` : '';
+
+    const pills = [];
+    if (outdated) pills.push(`<span class="pill outdated"><span class="pdot"></span>${outdated} outdated</span>`);
+    if (due)      pills.push(`<span class="pill due-soon"><span class="pdot"></span>${due} due soon</span>`);
+    if (current)  pills.push(`<span class="pill current"><span class="pdot"></span>${current} current</span>`);
+    if (!pills.length) pills.push('<span class="pill na">N/A</span>');
+
+    return `
+      <div class="ccard" data-idx="${idx}" title="View ${country} datasets">
+        <div class="ccard-top">
+          <div>
+            <div class="ccard-name">${country}</div>
+            ${iso3 ? `<div class="ccard-iso">${iso3.toUpperCase()}</div>` : ''}
+          </div>
+          <div class="ccard-count">${total}</div>
+        </div>
+        <div class="sbar">
+          ${seg(outdated, 'outdated')}
+          ${seg(due, 'due-soon')}
+          ${seg(current, 'current')}
+          ${seg(rest, '')}
+        </div>
+        <div class="pill-row">${pills.join('')}</div>
+      </div>`;
+  }
+
+  function toggleCountry(name, card) {
+    if (state.selected === name) { closePanel(); return; }
+    document.querySelectorAll('.ccard.selected').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.selected = name;
+    renderPanel(state.groups[name]);
+  }
+
+  function renderPanel(group) {
+    const { country, iso3, datasets } = group;
+    const sorted = [...datasets].sort((a, b) => a.type.localeCompare(b.type));
+
+    document.getElementById('panel-cname').textContent    = country;
+    document.getElementById('panel-iso').textContent      = iso3 ? iso3.toUpperCase() : '';
+    document.getElementById('panel-ds-count').textContent =
+      `${datasets.length} dataset${datasets.length !== 1 ? 's' : ''}`;
+
+    document.getElementById('panel-tbody').innerHTML = sorted.map(d => {
+      const dueCls = d.status === S.OUTDATED ? 'ds-due-late'
+        : d.status === S.DUE_SOON ? 'ds-due-warn' : 'ds-due-ok';
+      return `
+        <tr data-url="${HDX}${d.name}">
+          <td class="ds-type">${d.type}</td>
+          <td class="ds-mono">${fmtDate(d.lastMod)}</td>
+          <td class="ds-mono">${fmtFreq(d.frequency)}</td>
+          <td class="ds-mono ${dueCls}">${fmtDate(d.due)}</td>
+          <td><span class="badge ${d.status}">${statusLabel(d.status)}</span></td>
+          <td style="text-align:right"><span class="ds-hdx-lnk">Open on HDX &nearr;</span></td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('panel-wrap').classList.add('open');
+    setTimeout(() => {
+      document.getElementById('panel-shell').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+  }
+
+  function closePanel() {
+    document.getElementById('panel-wrap').classList.remove('open');
+    document.querySelectorAll('.ccard.selected').forEach(c => c.classList.remove('selected'));
+    state.selected = null;
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+
+  function setProgress(loaded, total, page, pages) {
+    document.getElementById('progress-fill').style.width =
+      `${Math.round((loaded / total) * 100)}%`;
+    document.getElementById('loader-sub').textContent =
+      `Loaded ${loaded.toLocaleString()} of ${total.toLocaleString()} datasets (page ${page}/${pages})`;
+  }
+
+  function tally(datasets) {
+    return datasets.reduce((acc, d) => {
+      acc[d.status] = (acc[d.status] || 0) + 1;
+      return acc;
+    }, {});
+  }
+
+  function fmtDate(date) {
+    if (!date) return '-';
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function fmtFreq(days) {
+    if (days == null) return '-';
+    const m = {
+      '-2': 'As Needed', '-1': 'Never', '0': 'Unknown',
+      '1': 'Daily', '7': 'Weekly', '14': 'Bi-weekly',
+      '30': 'Monthly', '90': 'Quarterly', '180': 'Semi-annual', '365': 'Annual'
+    };
+    return m[String(days)] ?? `${days}d`;
+  }
+
+  function statusLabel(s) {
+    return { [S.CURRENT]: 'Current', [S.DUE_SOON]: 'Due Soon',
+      [S.OUTDATED]: 'Outdated', [S.NA]: 'N/A', [S.UNKNOWN]: 'Unknown' }[s] ?? s;
+  }
+
+  function titleCase(str) {
+    return str.split(' ').map(w => w && w[0].toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  init();
+</script>
+</body>
+</html>
