@@ -94,6 +94,9 @@
       border-bottom: 1px solid var(--gray-100);
       padding: 0 24px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      position: sticky;
+      top: 0;
+      z-index: 101;
     }
 
     .h-inner {
@@ -120,56 +123,18 @@
       margin-top: 1px;
     }
 
-    .h-chips {
+    .h-divider { width: 1px; height: 26px; background: var(--gray-100); flex-shrink: 0; }
+
+    .h-actions {
       margin-left: auto;
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .chip {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 10px 3px 7px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-family: var(--font-alt);
-      font-weight: 500;
-      border: 1px solid var(--gray-100);
-      background: var(--gray-50);
-      white-space: nowrap;
-    }
-
-    .chip-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
-
-    .chip.total   { color: var(--gray-700); }
-    .chip.current { color: #16a34a; }   .chip.current .chip-dot  { background: #16a34a; }
-    .chip.due     { color: #d97706; }   .chip.due .chip-dot      { background: #d97706; }
-    .chip.late    { color: var(--hot-red); }   .chip.late .chip-dot     { background: var(--hot-red); }
-    #controls {
-      background: white;
-      border-bottom: 1px solid var(--gray-100);
-      padding: 9px 24px;
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
-      position: sticky;
-      top: 0;
-      z-index: 100;
     }
 
     .search-box {
       position: relative;
-      min-width: 180px;
-      flex: 1;
-      max-width: 340px;
+      width: 220px;
     }
 
     .search-box svg {
@@ -181,9 +146,7 @@
       pointer-events: none;
     }
 
-    .search-box input {
-      width: 100%;
-    }
+    .search-box input { width: 100%; }
 
     input[type="text"], select {
       font-family: var(--font);
@@ -201,30 +164,60 @@
     select { cursor: pointer; }
     .search-box input[type="text"] { padding-left: 32px; }
 
-    .cache-row {
-      margin-left: auto;
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--r);
+      background: white;
+      color: var(--gray-700);
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .icon-btn:hover { border-color: var(--hot-red); color: var(--hot-red); }
+
+    .stat-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 0 4px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px 3px 7px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-family: var(--font-alt);
+      font-weight: 500;
+      border: 1px solid var(--gray-100);
+      background: var(--gray-50);
+      white-space: nowrap;
+    }
+
+    .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    .chip.total   { color: var(--gray-700); }
+    .chip.current { color: #16a34a; } .chip.current .chip-dot { background: #16a34a; }
+    .chip.due     { color: #d97706; } .chip.due .chip-dot     { background: #d97706; }
+    .chip.late    { color: var(--hot-red); } .chip.late .chip-dot { background: var(--hot-red); }
+
+    .cache-label {
+      margin-left: auto;
       font-size: 11px;
       color: var(--gray-500);
       font-family: var(--font-alt);
     }
 
-    .refresh-btn {
-      font-family: var(--font);
-      font-size: 11px;
-      border: 1px solid var(--gray-200);
-      border-radius: var(--r);
-      padding: 3px 8px;
-      background: white;
-      color: var(--gray-700);
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-
-    .refresh-btn:hover { border-color: var(--hot-red); color: var(--hot-red); }
-    main { padding: 18px 24px 0; }
+    main { padding: 0 24px; }
     .country-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -416,7 +409,6 @@
     .ds-due-ok   { color: var(--gray-700); }
     .ds-due-warn { color: var(--s-due);    font-weight: 500; }
     .ds-due-late { color: var(--s-late);   font-weight: 500; }
-    .ds-hdx-lnk  { font-size: 11px; font-weight: 600; color: var(--hot-red); font-family: var(--font-alt); white-space: nowrap; }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -455,7 +447,8 @@
     footer a:hover { text-decoration: underline; }
     @media (max-width: 640px) {
       header      { padding: 0 14px; }
-      .h-chips    { display: none; }
+      .h-actions  { gap: 6px; }
+      .search-box { width: 140px; }
       #controls   { padding: 8px 14px; }
       main        { padding: 14px 14px 0; }
       .country-grid { grid-template-columns: 1fr; }
@@ -498,27 +491,32 @@
         <h1>HOT Dataset Status Dashboard</h1>
         <p>Humanitarian OpenStreetMap Team - HDX Dataset Monitor</p>
       </div>
-      <div class="h-chips" id="h-chips"></div>
+      <div class="h-divider"></div>
+      <div class="h-actions">
+        <div class="search-box">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="search" placeholder="Search country or type...">
+        </div>
+        <select id="status-filter">
+          <option value="all">All statuses</option>
+          <option value="outdated">Outdated</option>
+          <option value="due-soon">Due soon</option>
+          <option value="current">Up to date</option>
+          <option value="na">Not applicable</option>
+          <option value="unknown">Unknown</option>
+        </select>
+        <button class="icon-btn" id="refresh-btn" title="Refresh data">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+        </button>
+        <div class="h-divider"></div>
+        <div class="h-stats" id="h-stats"></div>
+      </div>
     </div>
   </header>
-
-  <div id="controls">
-    <div class="search-box">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input type="text" id="search" placeholder="Search by country or dataset type...">
-    </div>
-    <select id="status-filter">
-      <option value="all">All statuses</option>
-      <option value="outdated">Outdated</option>
-      <option value="due-soon">Due soon</option>
-      <option value="current">Up to date</option>
-      <option value="na">Not applicable</option>
-      <option value="unknown">Unknown</option>
-    </select>
-    <div class="cache-row" id="cache-row"></div>
-  </div>
 
   <main>
     <div class="country-grid" id="country-grid"></div>
@@ -532,7 +530,11 @@
               <span class="iso-badge"   id="panel-iso"></span>
               <span class="panel-ds-count" id="panel-ds-count"></span>
             </div>
-            <button class="panel-close-btn" id="panel-close">&#x2715;</button>
+            <button class="panel-close-btn" id="panel-close" aria-label="Close">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
+              </svg>
+            </button>
           </div>
           <div class="ds-table-wrap">
             <table class="ds-table">
@@ -543,7 +545,7 @@
                   <th>Frequency</th>
                   <th>Due Date</th>
                   <th>Status</th>
-                  <th></th>
+
                 </tr>
               </thead>
               <tbody id="panel-tbody"></tbody>
@@ -708,22 +710,12 @@
   function revealApp(cachedAt) {
     document.getElementById('loader').classList.add('done');
     document.getElementById('app').style.display = 'block';
-    renderCacheRow(cachedAt);
-    bindEvents();
-  }
-
-  function renderCacheRow(cachedAt) {
-    const el = document.getElementById('cache-row');
-    let label = 'Live data';
     if (cachedAt) {
       const mins = Math.round((Date.now() - cachedAt) / 60000);
-      label = mins < 1 ? 'Cached just now' : `Cached ${mins}m ago`;
+      const age  = mins < 1 ? 'just now' : `${mins}m ago`;
+      document.getElementById('refresh-btn').title = `Cached ${age} - click to refresh`;
     }
-    el.innerHTML = `${label}&nbsp;&nbsp;<button class="refresh-btn" id="refresh-btn">Refresh</button>`;
-    document.getElementById('refresh-btn').addEventListener('click', () => {
-      cacheClear();
-      location.reload();
-    });
+    bindEvents();
   }
 
   function bindEvents() {
@@ -745,6 +737,11 @@
     });
 
     document.getElementById('panel-close').addEventListener('click', closePanel);
+
+    document.getElementById('refresh-btn').addEventListener('click', () => {
+      cacheClear();
+      location.reload();
+    });
 
     document.getElementById('panel-tbody').addEventListener('click', e => {
       const row = e.target.closest('tr[data-url]');
@@ -784,7 +781,7 @@
     const ds  = state.filtered;
     const byS = tally(ds);
     const nc  = Object.keys(state.groups).length;
-    document.getElementById('h-chips').innerHTML = `
+    document.getElementById('stat-bar').innerHTML = `
       <div class="chip total">${ds.length.toLocaleString()} datasets - ${nc} countries</div>
       <div class="chip current"><div class="chip-dot"></div>${(byS[S.CURRENT]||0).toLocaleString()} up to date</div>
       <div class="chip due"><div class="chip-dot"></div>${(byS[S.DUE_SOON]||0).toLocaleString()} due soon</div>
@@ -878,7 +875,6 @@
           <td class="ds-mono">${fmtFreq(d.frequency)}</td>
           <td class="ds-mono ${dueCls}">${fmtDate(d.due)}</td>
           <td><span class="badge ${d.status}">${statusLabel(d.status)}</span></td>
-          <td style="text-align:right"><span class="ds-hdx-lnk">Open on HDX &nearr;</span></td>
         </tr>`;
     }).join('');
 
