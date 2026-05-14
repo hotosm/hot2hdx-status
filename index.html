@@ -90,9 +90,10 @@
     }
     #app { display: none; }
     header {
-      background: var(--gray-950);
-      color: white;
+      background: white;
+      border-bottom: 1px solid var(--gray-100);
       padding: 0 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
     .h-inner {
@@ -109,6 +110,7 @@
       font-weight: 700;
       letter-spacing: -0.01em;
       line-height: 1.2;
+      color: var(--gray-950);
     }
 
     .h-brand p {
@@ -135,8 +137,8 @@
       font-size: 11px;
       font-family: var(--font-alt);
       font-weight: 500;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--gray-100);
+      background: var(--gray-50);
       white-space: nowrap;
     }
 
@@ -146,10 +148,10 @@
       border-radius: 50%;
     }
 
-    .chip.total   { color: #cbd5e1; }
-    .chip.current { color: #86efac; }   .chip.current .chip-dot  { background: #4ade80; }
-    .chip.due     { color: #fde68a; }   .chip.due .chip-dot      { background: #fbbf24; }
-    .chip.late    { color: #fca5a5; }   .chip.late .chip-dot     { background: #f87171; }
+    .chip.total   { color: var(--gray-700); }
+    .chip.current { color: #16a34a; }   .chip.current .chip-dot  { background: #16a34a; }
+    .chip.due     { color: #d97706; }   .chip.due .chip-dot      { background: #d97706; }
+    .chip.late    { color: var(--hot-red); }   .chip.late .chip-dot     { background: var(--hot-red); }
     #controls {
       background: white;
       border-bottom: 1px solid var(--gray-100);
