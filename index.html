@@ -508,7 +508,7 @@
       <option value="all">All statuses</option>
       <option value="outdated">Outdated</option>
       <option value="due-soon">Due soon</option>
-      <option value="current">Current</option>
+      <option value="current">Up to date</option>
       <option value="na">Not applicable</option>
       <option value="unknown">Unknown</option>
     </select>
@@ -781,7 +781,7 @@
     const nc  = Object.keys(state.groups).length;
     document.getElementById('h-chips').innerHTML = `
       <div class="chip total">${ds.length.toLocaleString()} datasets - ${nc} countries</div>
-      <div class="chip current"><div class="chip-dot"></div>${(byS[S.CURRENT]||0).toLocaleString()} current</div>
+      <div class="chip current"><div class="chip-dot"></div>${(byS[S.CURRENT]||0).toLocaleString()} up to date</div>
       <div class="chip due"><div class="chip-dot"></div>${(byS[S.DUE_SOON]||0).toLocaleString()} due soon</div>
       <div class="chip late"><div class="chip-dot"></div>${(byS[S.OUTDATED]||0).toLocaleString()} outdated</div>
     `;
@@ -824,7 +824,7 @@
     const pills = [];
     if (outdated) pills.push(`<span class="pill outdated"><span class="pdot"></span>${outdated} outdated</span>`);
     if (due)      pills.push(`<span class="pill due-soon"><span class="pdot"></span>${due} due soon</span>`);
-    if (current)  pills.push(`<span class="pill current"><span class="pdot"></span>${current} current</span>`);
+    if (current)  pills.push(`<span class="pill current"><span class="pdot"></span>${current} up to date</span>`);
     if (!pills.length) pills.push('<span class="pill na">N/A</span>');
 
     return `
@@ -919,7 +919,7 @@
   }
 
   function statusLabel(s) {
-    return { [S.CURRENT]: 'Current', [S.DUE_SOON]: 'Due Soon',
+    return { [S.CURRENT]: 'Up to date', [S.DUE_SOON]: 'Due Soon',
       [S.OUTDATED]: 'Outdated', [S.NA]: 'N/A', [S.UNKNOWN]: 'Unknown' }[s] ?? s;
   }
 
