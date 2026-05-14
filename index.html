@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;700&family=Barlow:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* HOT UI design tokens */
     :root {
       --hot-red:       #d43f3f;
       --hot-red-dark:  #b83032;
@@ -51,8 +50,6 @@
       background: var(--gray-50);
       min-height: 100vh;
     }
-
-    /* ── Loader overlay ──────────────────────────────────────── */
     #loader {
       position: fixed;
       inset: 0;
@@ -88,11 +85,7 @@
       width: 0%;
       transition: width 0.25s ease;
     }
-
-    /* ── App shell ────────────────────────────────────────────── */
     #app { display: none; }
-
-    /* ── Header ──────────────────────────────────────────────── */
     header {
       background: var(--gray-950);
       color: white;
@@ -154,8 +147,6 @@
     .chip.current { color: #86efac; }   .chip.current .chip-dot  { background: #4ade80; }
     .chip.due     { color: #fde68a; }   .chip.due .chip-dot      { background: #fbbf24; }
     .chip.late    { color: #fca5a5; }   .chip.late .chip-dot     { background: #f87171; }
-
-    /* ── Controls ─────────────────────────────────────────────── */
     #controls {
       background: white;
       border-bottom: 1px solid var(--gray-100);
@@ -203,8 +194,6 @@
 
     input[type="text"]:focus, select:focus { border-color: var(--hot-red); }
     select { cursor: pointer; }
-
-    /* higher specificity wins over input[type="text"] */
     .search-box input[type="text"] { padding-left: 32px; }
 
     .cache-row {
@@ -230,11 +219,7 @@
     }
 
     .refresh-btn:hover { border-color: var(--hot-red); color: var(--hot-red); }
-
-    /* ── Main ─────────────────────────────────────────────────── */
     main { padding: 18px 24px 0; }
-
-    /* ── Country grid ─────────────────────────────────────────── */
     .country-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -315,8 +300,6 @@
     .pill.na, .pill.unknown { background: var(--s-na-bg); color: var(--s-na); }
 
     .pdot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-
-    /* ── Country detail panel ─────────────────────────────────── */
     #panel-wrap {
       display: grid;
       grid-template-rows: 0fr;
@@ -387,8 +370,6 @@
     }
 
     .panel-close-btn:hover { border-color: var(--hot-red); color: var(--hot-red); }
-
-    /* Dataset rows table */
     .ds-table-wrap { overflow-x: auto; }
 
     .ds-table {
@@ -431,8 +412,6 @@
     .ds-due-warn { color: var(--s-due);    font-weight: 500; }
     .ds-due-late { color: var(--s-late);   font-weight: 500; }
     .ds-hdx-lnk  { font-size: 11px; font-weight: 600; color: var(--hot-red); font-family: var(--font-alt); white-space: nowrap; }
-
-    /* Status badges */
     .badge {
       display: inline-flex;
       align-items: center;
@@ -449,8 +428,6 @@
     .badge.outdated { background: var(--s-late-bg);    color: var(--s-late); }
     .badge.due-soon { background: var(--s-due-bg);     color: var(--s-due); }
     .badge.na, .badge.unknown { background: var(--s-na-bg); color: var(--s-na); }
-
-    /* ── Empty state ──────────────────────────────────────────── */
     .empty {
       text-align: center;
       padding: 48px 20px;
@@ -458,8 +435,6 @@
       font-family: var(--font-alt);
       font-size: 13px;
     }
-
-    /* ── Footer ───────────────────────────────────────────────── */
     footer {
       padding: 14px 24px;
       font-size: 11px;
@@ -473,8 +448,6 @@
 
     footer a { color: var(--hot-red); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
-
-    /* ── Responsive ───────────────────────────────────────────── */
     @media (max-width: 640px) {
       header      { padding: 0 14px; }
       .h-chips    { display: none; }
@@ -487,7 +460,6 @@
 </head>
 <body>
 
-<!-- Loading overlay -->
 <div id="loader">
   <div class="l-logo">
     <svg xmlns="http://www.w3.org/2000/svg" width="100" height="60" viewBox="0 0 80 48" aria-label="HOT logo">
@@ -504,7 +476,6 @@
   <div class="l-sub" id="loader-sub">Connecting...</div>
 </div>
 
-<!-- App (hidden until data is ready) -->
 <div id="app">
   <header>
     <div class="h-inner">
@@ -589,8 +560,8 @@
   const HDX       = 'https://data.humdata.org/dataset/';
   const PAGE_SIZE = 500;
   const CACHE_KEY = 'hot_dashboard_v2';
-  const CACHE_TTL = 6 * 60 * 60 * 1000;   // 6 hours
-  const DUE_SOON  = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const CACHE_TTL = 6 * 60 * 60 * 1000;
+  const DUE_SOON  = 7 * 24 * 60 * 60 * 1000;
 
   const S = Object.freeze({
     CURRENT:  'current',
@@ -600,19 +571,15 @@
     UNKNOWN:  'unknown',
   });
 
-  // ── State ──────────────────────────────────────────────────────────────────
-
   const state = {
-    all:      [],          // fully hydrated dataset objects
+    all:      [],
     filtered: [],
-    groups:   {},          // { countryName: { country, iso3, datasets[] } }
-    rendered: [],          // ordered groups array after last renderGrid()
-    selected: null,        // selected country name
+    groups:   {},
+    rendered: [],
+    selected: null,
     search:   '',
     status:   'all',
   };
-
-  // ── Cache ──────────────────────────────────────────────────────────────────
 
   function cacheRead() {
     try {
@@ -627,14 +594,12 @@
   function cacheWrite(data) {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
-    } catch { /* quota exceeded or unavailable */ }
+    } catch { }
   }
 
   function cacheClear() {
     try { localStorage.removeItem(CACHE_KEY); } catch {}
   }
-
-  // ── Network ────────────────────────────────────────────────────────────────
 
   async function fetchPage(start) {
     const url = `${API}?q=organization:hot&rows=${PAGE_SIZE}&start=${start}&sort=metadata_modified+desc`;
@@ -660,8 +625,6 @@
 
     return raw;
   }
-
-  // ── Data processing ────────────────────────────────────────────────────────
 
   function processRaw(raw) {
     return raw.map(d => {
@@ -706,8 +669,6 @@
     }
     return S.UNKNOWN;
   }
-
-  // ── Init ───────────────────────────────────────────────────────────────────
 
   async function init() {
     try {
@@ -760,8 +721,6 @@
     });
   }
 
-  // ── Events ─────────────────────────────────────────────────────────────────
-
   function bindEvents() {
     document.getElementById('search').addEventListener('input', e => {
       state.search = e.target.value;
@@ -787,8 +746,6 @@
       if (row) window.open(row.dataset.url, '_blank', 'noopener');
     });
   }
-
-  // ── Filters ────────────────────────────────────────────────────────────────
 
   function applyFilters() {
     const q = state.search.toLowerCase().trim();
@@ -817,8 +774,6 @@
       return acc;
     }, {});
   }
-
-  // ── Rendering ──────────────────────────────────────────────────────────────
 
   function renderChips() {
     const ds  = state.filtered;
@@ -933,8 +888,6 @@
     document.querySelectorAll('.ccard.selected').forEach(c => c.classList.remove('selected'));
     state.selected = null;
   }
-
-  // ── Utilities ──────────────────────────────────────────────────────────────
 
   function setProgress(loaded, total, page, pages) {
     document.getElementById('progress-fill').style.width =
